@@ -42,7 +42,7 @@
     "eslint"
   ],
   "scripts": {
-    "test": "node Makefile.js test",
+    "test": "node Makefile.js test && npm run ast-alignment-tests",
     "jest": "jest",
     "ast-alignment-tests": "jest --config={} ./tests/ast-alignment/spec.js",
     "lint": "node Makefile.js lint",

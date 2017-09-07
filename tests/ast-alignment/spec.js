@@ -20,205 +20,252 @@ const jsxFilesWithKnownIssues = require("../jsx-known-issues");
  */
 jsxFilesWithKnownIssues.push("jsx/invalid-no-tag-name");
 
-const jsxPattern = `jsx/!(${jsxFilesWithKnownIssues.map(f => f.replace("jsx/", "")).join("|")}).src.js`;
-
-const fixturesDirPath = path.join(__dirname, "../fixtures");
+/**
+ * Utility to generate glob patterns for specific subsections of the fixtures/ directory,
+ * including the capability to ignore specific nested patterns
+ * @param {string} fixturesSubPath the sub-path within the fixtures/ directory
+ * @param {Object?} config an optional configuration object with optional sub-paths to ignore
+ * @returns {string} the glob pattern
+ */
+function createFixturePatternFor(fixturesSubPath, config) {
+    if (!fixturesSubPath) {
+        return "";
+    }
+    config = config || {};
+    config.ignore = config.ignore || [];
+    return `${fixturesSubPath}/!(${config.ignore.map(f => f.replace(`${fixturesSubPath}/`, "")).join("|")}).src.js`;
+}
 
 // Either a string of the pattern, or an object containing the pattern and some additional config
 const fixturePatternsToTest = [
-    "basics/**/*.src.js",
+    createFixturePatternFor("basics"),
 
-    "comments/block-trailing-comment.src.js",
-    "comments/comment-within-condition.src.js",
-    "comments/jsx-block-comment.src.js",
-    "comments/jsx-tag-comments.src.js",
-    "comments/line-comment-with-block-syntax.src.js",
-    "comments/mix-line-and-block-comments.src.js",
-    "comments/no-comment-regex.src.js",
-    "comments/surrounding-call-comments.src.js",
-    "comments/surrounding-debugger-comments.src.js",
-    "comments/surrounding-return-comments.src.js",
-    "comments/surrounding-throw-comments.src.js",
-    "comments/surrounding-while-loop-comments.src.js",
-    "comments/switch-fallthrough-comment-in-function.src.js",
-    "comments/switch-fallthrough-comment.src.js",
-    "comments/switch-no-default-comment-in-function.src.js",
-    "comments/switch-no-default-comment-in-nested-functions.src.js",
-    "comments/switch-no-default-comment.src.js",
+    createFixturePatternFor("comments", {
+        ignore: [
+            "comments/export-default-anonymous-class", // needs to be parsed with `sourceType: "module"`
+            /**
+             * Template strings seem to also be affected by the difference in opinion between different parsers in:
+             * https://github.com/babel/babylon/issues/673
+             */
+            "comments/no-comment-template", // Purely AST diffs
+            "comments/template-string-block" // Purely AST diffs
+        ]
+    }),
 
-    "ecma-features/arrowFunctions/as-param-with-params.src.js",
-    "ecma-features/arrowFunctions/as-param.src.js",
-    "ecma-features/arrowFunctions/basic.src.js",
-    "ecma-features/arrowFunctions/basic-in-binary-expression.src.js",
-    "ecma-features/arrowFunctions/block-body-not-object.src.js",
-    "ecma-features/arrowFunctions/block-body.src.js",
-    "ecma-features/arrowFunctions/error-missing-paren.src.js",
-    "ecma-features/arrowFunctions/error-not-arrow.src.js",
-    "ecma-features/arrowFunctions/error-numeric-param-multi.src.js",
-    "ecma-features/arrowFunctions/error-numeric-param.src.js",
-    "ecma-features/arrowFunctions/error-reverse-arrow.src.js",
-    "ecma-features/arrowFunctions/error-strict-default-param-eval.src.js",
-    "ecma-features/arrowFunctions/error-strict-eval-return.src.js",
-    "ecma-features/arrowFunctions/error-strict-eval.src.js",
-    "ecma-features/arrowFunctions/error-strict-param-arguments.src.js",
-    "ecma-features/arrowFunctions/error-strict-param-eval.src.js",
-    "ecma-features/arrowFunctions/error-strict-param-names.src.js",
-    "ecma-features/arrowFunctions/error-strict-param-no-paren-arguments.src.js",
-    "ecma-features/arrowFunctions/error-strict-param-no-paren-eval.src.js",
-    "ecma-features/arrowFunctions/error-wrapped-param.src.js",
-    "ecma-features/arrowFunctions/expression.src.js",
-    "ecma-features/arrowFunctions/iife.src.js",
-    "ecma-features/arrowFunctions/multiple-params.src.js",
-    "ecma-features/arrowFunctions/no-auto-return.src.js",
-    "ecma-features/arrowFunctions/not-strict-arguments.src.js",
-    "ecma-features/arrowFunctions/not-strict-eval-params.src.js",
-    "ecma-features/arrowFunctions/not-strict-eval.src.js",
-    "ecma-features/arrowFunctions/not-strict-octal.src.js",
-    "ecma-features/arrowFunctions/return-arrow-function.src.js",
-    "ecma-features/arrowFunctions/return-sequence.src.js",
-    "ecma-features/arrowFunctions/single-param-parens.src.js",
-    "ecma-features/arrowFunctions/single-param-return-identifier.src.js",
-    "ecma-features/arrowFunctions/single-param.src.js",
-    "ecma-features/binaryLiterals/**/*.src.js",
-    "ecma-features/blockBindings/**/*.src.js",
-    "ecma-features/classes/class-accessor-properties.src.js",
-    "ecma-features/classes/class-computed-static-method.src.js",
-    "ecma-features/classes/class-expression.src.js",
-    "ecma-features/classes/class-method-named-prototype.src.js",
-    "ecma-features/classes/class-method-named-static.src.js",
-    "ecma-features/classes/class-method-named-with-space.src.js",
-    "ecma-features/classes/class-one-method.src.js",
-    "ecma-features/classes/class-static-method-named-prototype.src.js",
-    "ecma-features/classes/class-static-method-named-static.src.js",
-    "ecma-features/classes/class-static-method.src.js",
-    "ecma-features/classes/class-static-methods-and-accessor-properties.src.js",
-    "ecma-features/classes/class-two-computed-static-methods.src.js",
-    "ecma-features/classes/class-two-methods-computed-constructor.src.js",
-    "ecma-features/classes/class-two-methods-semi.src.js",
-    "ecma-features/classes/class-two-methods-three-semi.src.js",
-    "ecma-features/classes/class-two-methods-two-semi.src.js",
-    "ecma-features/classes/class-two-methods.src.js",
-    "ecma-features/classes/class-two-static-methods-named-constructor.src.js",
-    "ecma-features/classes/class-with-constructor-parameters.src.js",
-    "ecma-features/classes/class-with-constructor-with-space.src.js",
-    "ecma-features/classes/class-with-constructor.src.js",
-    "ecma-features/classes/derived-class-assign-to-var.src.js",
-    "ecma-features/classes/derived-class-expression.src.js",
-    "ecma-features/classes/empty-class-double-semi.src.js",
-    "ecma-features/classes/empty-class-semi.src.js",
-    "ecma-features/classes/empty-class.src.js",
-    "ecma-features/classes/empty-literal-derived-class.src.js",
-    "ecma-features/classes/named-class-expression.src.js",
-    "ecma-features/classes/named-derived-class-expression.src.js",
-    "ecma-features/defaultParams/**/*.src.js",
-    "ecma-features/destructuring/array-member.src.js",
-    "ecma-features/destructuring/array-to-array.src.js",
-    "ecma-features/destructuring/array-var-undefined.src.js",
-    "ecma-features/destructuring/class-constructor-params-array.src.js",
-    "ecma-features/destructuring/class-constructor-params-defaults-array.src.js",
-    "ecma-features/destructuring/class-constructor-params-defaults-object.src.js",
-    "ecma-features/destructuring/class-constructor-params-object.src.js",
-    "ecma-features/destructuring/class-method-params-array.src.js",
-    "ecma-features/destructuring/class-method-params-defaults-array.src.js",
-    "ecma-features/destructuring/class-method-params-defaults-object.src.js",
-    "ecma-features/destructuring/class-method-params-object.src.js",
-    "ecma-features/destructuring/defaults-array-all.src.js",
-    "ecma-features/destructuring/defaults-array-longform-nested-multi.src.js",
-    "ecma-features/destructuring/defaults-array-multi.src.js",
-    "ecma-features/destructuring/defaults-array-nested-all.src.js",
-    "ecma-features/destructuring/defaults-array-nested-multi.src.js",
-    "ecma-features/destructuring/defaults-array.src.js",
-    "ecma-features/destructuring/defaults-object-all.src.js",
-    "ecma-features/destructuring/defaults-object-longform-all.src.js",
-    "ecma-features/destructuring/defaults-object-longform-multi.src.js",
-    "ecma-features/destructuring/defaults-object-longform.src.js",
-    "ecma-features/destructuring/defaults-object-mixed-multi.src.js",
-    "ecma-features/destructuring/defaults-object-multi.src.js",
-    "ecma-features/destructuring/defaults-object-nested-all.src.js",
-    "ecma-features/destructuring/defaults-object-nested-multi.src.js",
-    "ecma-features/destructuring/defaults-object.src.js",
-    "ecma-features/destructuring/destructured-array-catch.src.js",
-    "ecma-features/destructuring/destructured-object-catch.src.js",
-    "ecma-features/destructuring/named-param.src.js",
-    "ecma-features/destructuring/nested-array.src.js",
-    "ecma-features/destructuring/nested-object.src.js",
-    "ecma-features/destructuring/object-var-named.src.js",
-    "ecma-features/destructuring/object-var-undefined.src.js",
-    "ecma-features/destructuring/param-defaults-array.src.js",
-    "ecma-features/destructuring/param-defaults-object-nested.src.js",
-    "ecma-features/destructuring/param-defaults-object.src.js",
-    "ecma-features/destructuring/params-array-wrapped.src.js",
-    "ecma-features/destructuring/params-array.src.js",
-    "ecma-features/destructuring/params-multi-object.src.js",
-    "ecma-features/destructuring/params-nested-array.src.js",
-    "ecma-features/destructuring/params-nested-object.src.js",
-    "ecma-features/destructuring/params-object-wrapped.src.js",
-    "ecma-features/destructuring/params-object.src.js",
-    "ecma-features/destructuring/sparse-array.src.js",
-    "ecma-features/destructuring-and-arrowFunctions/**/*.src.js",
-    "ecma-features/destructuring-and-blockBindings/**/*.src.js",
-    "ecma-features/destructuring-and-defaultParams/**/*.src.js",
-    "ecma-features/destructuring-and-forOf/**/*.src.js",
-    "ecma-features/destructuring-and-spread/complex-destructured.src.js",
-    "ecma-features/destructuring-and-spread/destructured-array-literal.src.js",
-    "ecma-features/destructuring-and-spread/destructuring-param.src.js",
-    "ecma-features/destructuring-and-spread/multi-destructured.src.js",
-    "ecma-features/destructuring-and-spread/single-destructured.src.js",
-    "ecma-features/destructuring-and-spread/var-complex-destructured.src.js",
-    "ecma-features/destructuring-and-spread/var-destructured-array-literal.src.js",
-    "ecma-features/destructuring-and-spread/var-multi-destructured.src.js",
-    "ecma-features/destructuring-and-spread/var-single-destructured.src.js",
-    "ecma-features/experimentalAsyncIteration/**/*.src.js",
-    "ecma-features/experimentalDynamicImport/**/*.src.js",
-    "ecma-features/exponentiationOperators/**/*.src.js",
-    "ecma-features/forOf/for-of-with-var-and-braces.src.js",
-    "ecma-features/forOf/for-of-with-var-and-no-braces.src.js",
-    "ecma-features/forOf/invalid-for-of-with-const-and-no-braces.src.js",
-    "ecma-features/forOf/invalid-for-of-with-let-and-no-braces.src.js",
-    "ecma-features/generators/**/*.src.js",
-    "ecma-features/globalReturn/**/*.src.js",
-    "ecma-features/modules/error-function.src.js",
-    "ecma-features/modules/invalid-export-batch-missing-from-clause.src.js",
-    "ecma-features/modules/invalid-export-batch-token.src.js",
-    "ecma-features/modules/invalid-export-default-equal.src.js",
-    "ecma-features/modules/invalid-export-default-token.src.js (1ms)",
-    "ecma-features/modules/invalid-export-named-extra-comma.src.js",
-    "ecma-features/modules/invalid-export-named-middle-comma.src.js",
-    "ecma-features/modules/invalid-import-default-after-named-after-default.src.js",
-    "ecma-features/modules/invalid-import-default-after-named.src.js",
-    "ecma-features/modules/invalid-import-default-missing-module-specifier.src.js",
-    "ecma-features/modules/invalid-import-default.src.js (1ms)",
-    "ecma-features/modules/invalid-import-missing-module-specifier.src.js",
-    "ecma-features/modules/invalid-import-named-after-named.src.js",
-    "ecma-features/modules/invalid-import-named-after-namespace.src.js",
-    "ecma-features/modules/invalid-import-named-as-missing-from.src.js",
-    "ecma-features/modules/invalid-import-named-extra-comma.src.js",
-    "ecma-features/modules/invalid-import-named-middle-comma.src.js (1ms)",
-    "ecma-features/modules/invalid-import-namespace-after-named.src.js",
-    "ecma-features/modules/invalid-import-namespace-missing-as.src.js",
-    "ecma-features/newTarget/simple-new-target.src.js",
-    "ecma-features/objectLiteralComputedProperties/**/*.src.js",
-    "ecma-features/objectLiteralDuplicateProperties/strict-duplicate-properties.src.js",
-    "ecma-features/objectLiteralDuplicateProperties/strict-duplicate-string-properties.src.js",
-    "ecma-features/objectLiteralShorthandMethods/**/*.src.js",
-    "ecma-features/objectLiteralShorthandProperties/**/*.src.js",
-    "ecma-features/octalLiterals/**/*.src.js",
-    "ecma-features/regex/**/*.src.js",
-    "ecma-features/regexUFlag/**/*.src.js",
-    "ecma-features/regexYFlag/**/*.src.js",
-    "ecma-features/restParams/basic-rest.src.js",
-    "ecma-features/restParams/class-constructor.src.js",
-    "ecma-features/restParams/class-method.src.js",
-    "ecma-features/restParams/func-expression-multi.src.js",
-    "ecma-features/restParams/func-expression.src.js",
-    "ecma-features/restParams/invalid-rest-param.src.js",
-    "ecma-features/restParams/single-rest.src.js",
-    "ecma-features/spread/**/*.src.js",
-    "ecma-features/unicodeCodePointEscapes/**/*.src.js",
+    createFixturePatternFor("ecma-features/templateStrings", {
+        ignore: [
+            "ecma-features/templateStrings/**/*"
+        ]
+    }),
 
-    jsxPattern,
+    createFixturePatternFor("ecma-features/experimentalObjectRestSpread", {
+        ignore: [
+            /**
+             * "ExperimentalSpreadProperty" in espree/typescript-eslint-parser vs "SpreadElement" in Babylon
+             * comes up a lot in this section
+             */
+            "ecma-features/experimentalObjectRestSpread/**/*"
+        ]
+    }),
 
-    "jsx-useJSXTextNode/**/*.src.js",
+    createFixturePatternFor("ecma-features/arrowFunctions", {
+        ignore: [
+            /**
+             * Expected babylon parse errors - all of these files below produce parse errors in espree
+             * as well, but the TypeScript compiler is so forgiving during parsing that typescript-eslint-parser
+             * does not actually error on them and will produce an AST.
+             */
+            "ecma-features/arrowFunctions/error-dup-params", // babylon parse errors
+            "ecma-features/arrowFunctions/error-dup-params", // babylon parse errors
+            "ecma-features/arrowFunctions/error-strict-dup-params", // babylon parse errors
+            "ecma-features/arrowFunctions/error-strict-octal", // babylon parse errors
+            "ecma-features/arrowFunctions/error-two-lines" // babylon parse errors
+        ]
+    }),
+
+    createFixturePatternFor("ecma-features/binaryLiterals"),
+    createFixturePatternFor("ecma-features/blockBindings"),
+
+    createFixturePatternFor("ecma-features/classes", {
+        ignore: [
+            /**
+             * super() is being used outside of constructor. Other parsers (e.g. espree, acorn) do not error on this.
+             */
+            "ecma-features/classes/class-one-method-super", // babylon parse errors
+            /**
+             * Expected babylon parse errors - all of these files below produce parse errors in espree
+             * as well, but the TypeScript compiler is so forgiving during parsing that typescript-eslint-parser
+             * does not actually error on them and will produce an AST.
+             */
+            "ecma-features/classes/invalid-class-declaration", // babylon parse errors
+            "ecma-features/classes/invalid-class-setter-declaration" // babylon parse errors
+        ]
+    }),
+
+    createFixturePatternFor("ecma-features/defaultParams"),
+
+    createFixturePatternFor("ecma-features/destructuring", {
+        ignore: [
+            /**
+             * Expected babylon parse errors - all of these files below produce parse errors in espree
+             * as well, but the TypeScript compiler is so forgiving during parsing that typescript-eslint-parser
+             * does not actually error on them and will produce an AST.
+             */
+            "ecma-features/destructuring/invalid-defaults-object-assign" // babylon parse errors
+        ]
+    }),
+
+    createFixturePatternFor("ecma-features/destructuring-and-arrowFunctions"),
+    createFixturePatternFor("ecma-features/destructuring-and-blockBindings"),
+    createFixturePatternFor("ecma-features/destructuring-and-defaultParams"),
+    createFixturePatternFor("ecma-features/destructuring-and-forOf"),
+
+    createFixturePatternFor("ecma-features/destructuring-and-spread", {
+        ignore: [
+            /**
+             * Expected babylon parse errors - all of these files below produce parse errors in espree
+             * as well, but the TypeScript compiler is so forgiving during parsing that typescript-eslint-parser
+             * does not actually error on them and will produce an AST.
+             */
+            "ecma-features/destructuring-and-spread/error-complex-destructured-spread-first" // babylon parse errors
+        ]
+    }),
+
+    createFixturePatternFor("ecma-features/experimentalAsyncIteration"),
+    createFixturePatternFor("ecma-features/experimentalDynamicImport"),
+    createFixturePatternFor("ecma-features/exponentiationOperators"),
+
+    createFixturePatternFor("ecma-features/forOf", {
+        ignore: [
+            /**
+             * TypeScript, espree and acorn parse this fine - esprima, flow and babylon do not...
+             */
+            "ecma-features/forOf/for-of-with-function-initializer" // babylon parse errors
+        ]
+    }),
+
+    createFixturePatternFor("ecma-features/generators"),
+    createFixturePatternFor("ecma-features/globalReturn"),
+
+    createFixturePatternFor("ecma-features/modules", {
+        ignore: [
+            /**
+             * TypeScript, flow and babylon parse this fine - esprima, espree and acorn do not...
+             */
+            "ecma-features/modules/invalid-export-default", // typescript-eslint-parser parse errors
+            /**
+             * Expected babylon parse errors - all of these files below produce parse errors in espree
+             * as well, but the TypeScript compiler is so forgiving during parsing that typescript-eslint-parser
+             * does not actually error on them and will produce an AST.
+             */
+            "ecma-features/modules/invalid-export-named-default", // babylon parse errors
+            "ecma-features/modules/invalid-import-default-module-specifier", // babylon parse errors
+            "ecma-features/modules/invalid-import-module-specifier", // babylon parse errors
+            /**
+             * Deleting local variable in strict mode
+             */
+            "ecma-features/modules/error-delete", // babylon parse errors
+            /**
+             * 'with' in strict mode
+             */
+            "ecma-features/modules/error-strict", // babylon parse errors
+
+            "ecma-features/modules/export-default-array", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-default-class", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-default-expression", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-default-function", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-default-named-class", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-default-named-function", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-default-number", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-default-object", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-default-value", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-from-batch", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-from-default", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-from-named-as-default", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-from-named-as-specifier", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-from-named-as-specifiers", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-from-specifier", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-from-specifiers", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-function", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-named-as-default", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-named-as-specifier", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-named-as-specifiers", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-named-class", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-named-empty", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-named-specifier", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-named-specifiers-comma", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-named-specifiers", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-var-anonymous-function", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-var-number", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/export-var", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/import-default-and-named-specifiers", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/import-default-and-namespace-specifiers", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/import-default-as", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/import-default", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/import-jquery", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/import-module", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/import-named-as-specifier", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/import-named-as-specifiers", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/import-named-empty", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/import-named-specifier", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/import-named-specifiers-comma", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/import-named-specifiers", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/import-namespace-specifier", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/import-null-as-nil", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/invalid-await", // needs to be parsed with `sourceType: "module"`
+            "ecma-features/modules/invalid-class" // needs to be parsed with `sourceType: "module"`
+        ]
+    }),
+
+    createFixturePatternFor("ecma-features/newTarget", {
+        ignore: [
+            /**
+             * Expected babylon parse errors - all of these files below produce parse errors in espree
+             * as well, but the TypeScript compiler is so forgiving during parsing that typescript-eslint-parser
+             * does not actually error on them and will produce an AST.
+             */
+            "ecma-features/newTarget/invalid-new-target", // babylon parse errors
+            "ecma-features/newTarget/invalid-unknown-property" // babylon parse errors
+        ]
+    }),
+
+    createFixturePatternFor("ecma-features/objectLiteralComputedProperties"),
+
+    createFixturePatternFor("ecma-features/objectLiteralDuplicateProperties", {
+        ignore: [
+            /**
+             * Expected babylon parse errors - all of these files below produce parse errors in espree
+             * as well, but the TypeScript compiler is so forgiving during parsing that typescript-eslint-parser
+             * does not actually error on them and will produce an AST.
+             */
+            "ecma-features/objectLiteralDuplicateProperties/error-proto-property", // babylon parse errors
+            "ecma-features/objectLiteralDuplicateProperties/error-proto-string-property" // babylon parse errors
+        ]
+    }),
+
+    createFixturePatternFor("ecma-features/objectLiteralShorthandMethods"),
+    createFixturePatternFor("ecma-features/objectLiteralShorthandProperties"),
+    createFixturePatternFor("ecma-features/octalLiterals"),
+    createFixturePatternFor("ecma-features/regex"),
+    createFixturePatternFor("ecma-features/regexUFlag"),
+    createFixturePatternFor("ecma-features/regexYFlag"),
+
+    createFixturePatternFor("ecma-features/restParams", {
+        ignore: [
+            /**
+             * Expected babylon parse errors - all of these files below produce parse errors in espree
+             * as well, but the TypeScript compiler is so forgiving during parsing that typescript-eslint-parser
+             * does not actually error on them and will produce an AST.
+             */
+            "ecma-features/restParams/error-no-default", // babylon parse errors
+            "ecma-features/restParams/error-not-last" // babylon parse errors
+        ]
+    }),
+
+    createFixturePatternFor("ecma-features/spread"),
+    createFixturePatternFor("ecma-features/unicodeCodePointEscapes"),
+    createFixturePatternFor("jsx", { ignore: jsxFilesWithKnownIssues }),
+    createFixturePatternFor("jsx-useJSXTextNode"),
 
     /**
      * The TypeScript compiler gives us the "externalModuleIndicator" to allow typescript-eslint-parser do dynamically detect the "sourceType".
@@ -620,6 +667,7 @@ const fixturePatternsToTest = [
 
 // Either a string of the pattern, or an object containing the pattern and some additional config
 const fixturesToTest = [];
+const fixturesDirPath = path.join(__dirname, "../fixtures");
 
 fixturePatternsToTest.forEach(fixturePattern => {
     const globPattern = (typeof fixturePattern === "string") ? fixturePattern : fixturePattern.pattern;
